@@ -26,7 +26,7 @@ def make(mode):
     if mode == "operations":
         ax.set_yscale("log")
         ax.set_ylabel("Counted operations (log scale)")
-        ax.set_title("Measured operations: DSU calls + edge scans + weight comparisons")
+        ax.set_title("Measured operations: DSU calls + edge scans + weighted-value comparisons")
     else:
         ax.set_ylabel("Edge scans / input edges m")
         ax.set_title("Fraction of edges examined by Kruskal" if mode == "kruskal_share" else "Measured edge scans per input edge")
@@ -34,7 +34,8 @@ def make(mode):
     ax.grid(True, which="both", alpha=.2)
     # Identical traversal counts overlap exactly; the legend retains every series.
     ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=9, frameon=False)
-    fig.text(.01, .005, "Source: results/results.csv | Random(42) | 5 runs per case | solid: m=4n; dashed: m=20n", fontsize=8)
+    fig.get_layout_engine().set(rect=(0, .045, 1, .955))
+    fig.text(.01, .008, "Source: results/results.csv | Random(42) | 5 runs per case | solid: m=4n; dashed: m=20n", fontsize=8)
     DEST.mkdir(parents=True, exist_ok=True)
     fig.savefig(DEST / f"{mode}.png", dpi=170)
     plt.close(fig)
@@ -42,3 +43,5 @@ def make(mode):
 if __name__ == "__main__":
     for mode in ("operations", "scans_per_edge", "kruskal_share"):
         make(mode)
+
+

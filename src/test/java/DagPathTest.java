@@ -1,4 +1,4 @@
-import graph.*;import algorithms.*;import metrics.*;import java.util.*;import java.nio.file.*;
+import graph.*;import algorithms.*;import metrics.*;import java.util.*;import java.nio.file.Path;
 import org.junit.jupiter.api.Test;import static org.junit.jupiter.api.Assertions.*;
 class DagPathTest {
  @Test void againstBellmanFord(){
@@ -22,3 +22,4 @@ class DagPathTest {
   assertEquals(0,DagShortestPath.run(new Graph(0,true),new Metrics()).sum());
  }
 }
+

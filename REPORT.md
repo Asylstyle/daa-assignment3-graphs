@@ -1,5 +1,5 @@
 # DAA Assignment 3 - Graphs
-Assylzhan Amangeldi | 23 October 2026 | Group: not provided
+Assylzhan Amangeldi | 23 October 2026 | Group: SE-2526
 
 ## 1. Design and complexity (page 1 of 5)
 The implementation uses one adjacency-list Graph, integer edge weights, long totals and counters. V is the vertex count and E is the input edge count. Undirected adjacency stores two arcs per input edge. Extra space below excludes the original graph but includes working output. Empty graphs, loops, parallel edges and isolates are supported.
@@ -38,7 +38,22 @@ Counter boundaries are explicit: dsu_ops counts find calls plus successful union
 
 Tests cross-check DSU labels, 100 connected MST graphs, random SCCs against all-source BFS, DAG distances against Bellman-Ford with negative edges, and a 100000-vertex SCC path. Three input fixtures are actually loaded by tests. Independent read-only review checked implementation and benchmark generation. AI assistance was used for code, tests and documentation; results are measured, not generated estimates.
 
-<!-- MEASUREMENTS -->
+Sizes in every row below: 1000, 3162, 10000, 31623, 100000.
+
+| Algorithm / density | Counter / formula at the five sizes |
+|---|---|
+| Kruskal, 4V: comparisons/(E log2 E) | 0.891, 0.907, 0.869, 0.809, 0.745 |
+| Kruskal, 20V: comparisons/(E log2 E) | 0.903, 0.846, 0.784, 0.720, 0.666 |
+| Prim, 4V: comparisons/(E log2 E) | 1.829, 1.865, 1.895, 1.921, 1.934 |
+| Prim, 20V: comparisons/(E log2 E) | 1.825, 1.847, 1.866, 1.878, 1.890 |
+| Kosaraju, 4V: scans/(V+E) | 1.600, 1.600, 1.600, 1.600, 1.600 |
+| Kosaraju, 20V: scans/(V+E) | 1.905, 1.905, 1.905, 1.905, 1.905 |
+| Kahn, 4V: scans/(V+E) | 0.800, 0.800, 0.800, 0.800, 0.800 |
+| Kahn, 20V: scans/(V+E) | 0.952, 0.952, 0.952, 0.952, 0.952 |
+| DagShortestPath, 4V: scans/(V+E) | 0.800, 0.800, 0.800, 0.800, 0.800 |
+| DagShortestPath, 20V: scans/(V+E) | 0.952, 0.952, 0.952, 0.952, 0.952 |
+
+Traversal ratios are exactly constant. Sorting/heap ratios stay bounded in a narrow band, consistent with E log E work; finite experiments support rather than prove an asymptotic bound. Kruskal DSU work depends on the stopping point, so dsu_ops/E need not be constant.
 
 <div style="page-break-after: always;"></div>
 
@@ -54,7 +69,15 @@ Operations here means dsu_ops + edge_scans + comparisons; max_depth is a space i
 
 Prim and Kosaraju scan 2E, Kahn and DAG relaxation E; both densities overlap exactly for these algorithms. A flat scan curve confirms linear scanning, but alone cannot prove the total algorithm complexity. Prim still performs heap comparisons and Kruskal sorts all input edges.
 
-<!-- SLOPES -->
+| Algorithm | Scan slope, E=4V | Scan slope, E=20V |
+|---|---:|---:|
+| Kruskal | 1.0550 | 1.1194 |
+| Prim | 1.0000 | 1.0000 |
+| Kosaraju | 1.0000 | 1.0000 |
+| Kahn | 1.0000 | 1.0000 |
+| DagShortestPath | 1.0000 | 1.0000 |
+
+OLS fits use natural logs of the five measured points. The PDF incorrectly attributes the sorting log factor to Kruskal edgeScans: sorting comparisons carry that factor, not scans. Kruskal comparison slopes are 1.0545 (4V) and 1.0159 (20V). Its scan slopes reflect the changing fraction before early termination and are not evidence of an E log E scan bound.
 
 <div style="page-break-after: always;"></div>
 
@@ -63,6 +86,6 @@ Prim and Kosaraju scan 2E, Kahn and DAG relaxation E; both densities overlap exa
 
 Kruskal can stop after V-1 accepted edges on a connected graph. On a forest it processes all necessary sorted edges and reports component count. A smaller fraction of scanned edges in E=20V does not eliminate sorting all E edges. Prim scans all 2E adjacency arcs and also skips stale heap entries. These facts explain the measured operation differences without making a hardware-independent speed claim.
 
-<!-- TIMING -->
+Recorded median times range from 0.212 to 1972.055 ms on Windows with OpenJDK 25, one JVM and a 4 GiB maximum heap. Timing includes each algorithm's preparation (including DAG topological sorting), while scan counters use the stated narrower boundaries. The two smallest cases are strongly affected by JIT warmup, allocation and background activity; no dedicated warmup was performed. Hardware, JVM and load change timings, whereas operation counts remain reproducible. Therefore conclusions use counters, not a universal speed ranking.
 
 The source CSV is results/results.csv. Run python scripts/analyze.py to validate coverage and recompute slopes; python scripts/plot.py recreates the three figures directly from that CSV. The original instructor PDF is deliberately excluded from the repository and submission archive. No Moodle submission is performed.

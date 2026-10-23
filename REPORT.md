@@ -13,11 +13,14 @@ The implementation uses one adjacency-list Graph, integer edge weights, long tot
 | Kosaraju | O(V+E) | O(V+E) | Two explicit traversals, finish order, component array and transpose. |
 | Kahn | O(V+E) | O(V) | Prepare indegrees then remove each vertex and decrement each outgoing arc once. |
 | DAG shortest paths | O(V+E) | O(V) | Kahn preparation plus one relaxation pass, distances and parents. |
+| Tarjan SCC | O(V+E) | O(V) | One DFS with index/lowlink, explicit frames and active vertices. |
+| Condensation | O(V+E) | O(V+E) | Compute SCCs, then retain crossing edges in a new DAG. |
+| Critical path on a DAG | O(V+E) | O(V) | Topological maximum relaxation and parent reconstruction. |
 
-### Correctness: cut property (6 sentences)
+### Correctness: cut property
 Take a cut separating vertices in an undirected component and choose a minimum-weight crossing edge e. If a spanning tree already contains e, keeping e causes no problem. Otherwise adding e creates a cycle with a crossing edge f whose weight is at least the weight of e. Removing f leaves a spanning tree with no larger weight, so some minimum spanning tree contains e. Kruskal applies this exchange argument to the cut around a current DSU component when it accepts the next lightest edge joining different components. Prim applies it to the cut between its visited tree and unvisited vertices; restarting on another component therefore gives a minimum spanning forest.
 
-### Correctness: topological induction (6 sentences)
+### Correctness: topological induction
 Every zero-indegree vertex has distance zero, equivalent to an incoming zero-cost edge from a virtual source. Every non-source vertex of a finite DAG is reachable from at least one such source. Assume all vertices before u in a topological order already have optimal distances. Every path to u ends at a predecessor that occurs earlier, so its last edge has already been relaxed. Thus u has its optimum distance when processed, and relaxing its outgoing edges preserves the induction. Negative edges are safe because no cycle can improve a processed vertex; in a general graph negative cycles can make distances undefined, although negative edges without such cycles are valid for algorithms such as Bellman-Ford.
 
 <div style="page-break-after: always;"></div>
@@ -36,8 +39,9 @@ Counter boundaries are explicit: dsu_ops counts find calls plus successful union
 | Known DAG with negative weights | Kahn order then DAG relaxation, linear time; all indegree-zero vertices act as sources. |
 | General directed weighted graph | These DAG paths do not apply if cyclic; Bellman-Ford handles negative edges and detects reachable negative cycles. |
 
-Tests cross-check DSU labels, 100 connected MST graphs, random SCCs against all-source BFS, DAG distances against Bellman-Ford with negative edges, and a 100000-vertex SCC path. Three input fixtures are actually loaded by tests. Independent read-only review checked implementation and benchmark generation. AI assistance was used for code, tests and documentation; results are measured, not generated estimates.
+Tests cross-check DSU labels, 100 connected MST graphs, random SCCs against all-source BFS, DAG distances against Bellman-Ford with negative edges, and a 100000-vertex SCC path. The tests load all three input fixtures.
 
+<!-- MEASUREMENTS_START -->
 Sizes in every row below: 1000, 3162, 10000, 31623, 100000.
 
 | Algorithm / density | Counter / formula at the five sizes |
@@ -54,6 +58,7 @@ Sizes in every row below: 1000, 3162, 10000, 31623, 100000.
 | DagShortestPath, 20V: scans/(V+E) | 0.952, 0.952, 0.952, 0.952, 0.952 |
 
 Traversal ratios are exactly constant. Sorting/heap ratios stay bounded in a narrow band, consistent with E log E work; finite experiments support rather than prove an asymptotic bound. Kruskal DSU work depends on the stopping point, so dsu_ops/E need not be constant.
+<!-- MEASUREMENTS_END -->
 
 <div style="page-break-after: always;"></div>
 
@@ -69,6 +74,7 @@ Operations here means dsu_ops + edge_scans + comparisons; max_depth is a space i
 
 Prim and Kosaraju scan 2E, Kahn and DAG relaxation E; both densities overlap exactly for these algorithms. A flat scan curve confirms linear scanning, but alone cannot prove the total algorithm complexity. Prim still performs heap comparisons and Kruskal sorts all input edges.
 
+<!-- SLOPES_START -->
 | Algorithm | Scan slope, E=4V | Scan slope, E=20V |
 |---|---:|---:|
 | Kruskal | 1.0550 | 1.1194 |
@@ -78,6 +84,7 @@ Prim and Kosaraju scan 2E, Kahn and DAG relaxation E; both densities overlap exa
 | DagShortestPath | 1.0000 | 1.0000 |
 
 OLS fits use natural logs of the five measured points. The PDF incorrectly attributes the sorting log factor to Kruskal edgeScans: sorting comparisons carry that factor, not scans. Kruskal comparison slopes are 1.0545 (4V) and 1.0159 (20V). Its scan slopes reflect the changing fraction before early termination and are not evidence of an E log E scan bound.
+<!-- SLOPES_END -->
 
 <div style="page-break-after: always;"></div>
 
@@ -86,6 +93,11 @@ OLS fits use natural logs of the five measured points. The PDF incorrectly attri
 
 Kruskal can stop after V-1 accepted edges on a connected graph. On a forest it processes all necessary sorted edges and reports component count. A smaller fraction of scanned edges in E=20V does not eliminate sorting all E edges. Prim scans all 2E adjacency arcs and also skips stale heap entries. These facts explain the measured operation differences without making a hardware-independent speed claim.
 
+<!-- TIMING_START -->
 Recorded median times range from 0.212 to 1972.055 ms on Windows with OpenJDK 25, one JVM and a 4 GiB maximum heap. Timing includes each algorithm's preparation (including DAG topological sorting), while scan counters use the stated narrower boundaries. The two smallest cases are strongly affected by JIT warmup, allocation and background activity; no dedicated warmup was performed. Hardware, JVM and load change timings, whereas operation counts remain reproducible. Therefore conclusions use counters, not a universal speed ranking.
+<!-- TIMING_END -->
 
-The source CSV is results/results.csv. Run python scripts/analyze.py to validate coverage and recompute slopes; python scripts/plot.py recreates the three figures directly from that CSV. The original instructor PDF is deliberately excluded from the repository and submission archive. No Moodle submission is performed.
+The source CSV is results/results.csv. Run python scripts/analyze.py to validate coverage and recompute slopes; python scripts/plot.py recreates the three figures directly from that CSV.
+
+## Bonus algorithms
+Tarjan uses a single iterative DFS and scans E directed edges, versus 2E DFS scans for Kosaraju. Actual five-run comparisons for all ten size/density cases are in [BONUS.md](BONUS.md) and results/bonus-scc.csv. The bonus also constructs the SCC condensation and finds its longest source-to-sink path by topological maximum relaxation. Crossing edge weights are retained; SCC blocks have zero duration and internal weights are excluded. This is a path through components, not a longest simple path in the original cyclic graph. [BONUS.md](BONUS.md) defines signed-weight behavior, scheduling assumptions and restoration of the component path.

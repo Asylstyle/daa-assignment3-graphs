@@ -33,7 +33,7 @@ Exactly 35 substantive commits; feature branches are integrated by fast-forward 
 29. Three measured PNG charts
 30. Complexity and correctness report
 31. Measured ratios and fitted slopes report
-32. Usage and AI disclosure README
+32. Usage README
 33. CI build and tests
 34. Reproducible submission ZIP script
 35. Final verification documentation

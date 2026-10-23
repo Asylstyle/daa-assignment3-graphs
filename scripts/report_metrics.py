@@ -1,5 +1,6 @@
 """Refresh measured sections in REPORT.md without changing hand-written explanations."""
 import math
+import re
 from pathlib import Path
 from analyze import load, slope, ALGORITHMS
 root=Path(__file__).resolve().parents[1]
@@ -34,5 +35,11 @@ slopes.append("")
 slopes.append(f"OLS fits use natural logs of the five measured points. The PDF incorrectly attributes the sorting log factor to Kruskal edgeScans: sorting comparisons carry that factor, not scans. Kruskal comparison slopes are {kr[0]:.4f} (4V) and {kr[1]:.4f} (20V). Its scan slopes reflect the changing fraction before early termination and are not evidence of an E log E scan bound.")
 times=[r["time_ms"] for r in rows]
 timing=f"Recorded median times range from {min(times):.3f} to {max(times):.3f} ms on Windows with OpenJDK 25, one JVM and a 4 GiB maximum heap. Timing includes each algorithm's preparation (including DAG topological sorting), while scan counters use the stated narrower boundaries. The two smallest cases are strongly affected by JIT warmup, allocation and background activity; no dedicated warmup was performed. Hardware, JVM and load change timings, whereas operation counts remain reproducible. Therefore conclusions use counters, not a universal speed ranking."
-report=report.replace("Group: not provided","Group: SE-2526").replace("<!-- MEASUREMENTS -->","\n".join(measured)).replace("<!-- SLOPES -->","\n".join(slopes)).replace("<!-- TIMING -->",timing)
+def section(text, name, value):
+    block = f"<!-- {name}_START -->\n{value}\n<!-- {name}_END -->"
+    pattern = rf"<!-- {name}_START -->.*?<!-- {name}_END -->"
+    return re.sub(pattern, lambda match: block, text, flags=re.S)
+report=section(report,"MEASUREMENTS","\n".join(measured))
+report=section(report,"SLOPES","\n".join(slopes))
+report=section(report,"TIMING",timing)
 (root/"REPORT.md").write_text(report,encoding="utf-8")

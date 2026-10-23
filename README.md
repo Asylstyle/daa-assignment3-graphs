@@ -20,13 +20,26 @@ python -m pip install -r requirements.txt
 python scripts/analyze.py
 python scripts/plot.py
 ```
-The benchmark uses the exact assignment generator, five runs and median time. It checks all references, equal MST weights, topological validity, deterministic counters and exact traversal scan counts before installing the CSV. An alternate CSV output path may be supplied as the first argument. About 4 GiB maximum heap is recommended for the largest cases. Timings will vary; counters reproduce with this implementation. The report states precisely which preparation is excluded from counters. Figure 1 sums DSU calls, scans and comparisons; overlapping curves are explained in the report. All three PNGs were inspected as pixels and checked against the CSV.
+The benchmark uses the exact assignment generator, five runs and median time. It checks all references, equal MST weights, topological validity, deterministic counters and exact traversal scan counts before installing the CSV. An alternate CSV output path may be supplied as the first argument. About 4 GiB maximum heap is recommended for the largest cases. Timings will vary; counters reproduce with this implementation. The report states precisely which preparation is excluded from counters. Figure 1 sums DSU calls, scans and comparisons; overlapping curves are explained in the report.
 
 The detailed specification requires **50 rows** across ten size/density combinations and three graph kinds. Its later "four generated graphs" phrase conflicts with that detailed requirement. The report also explains why Kruskal's sorting log factor belongs to comparison counts rather than edge scans.
 
+## Bonus algorithms
+```sh
+java -cp target/classes graph.BonusMain data/critical.txt
+java -Xmx4g -cp target/classes benchmark.BonusBenchmark
+```
+Tarjan uses explicit DFS frames and an active-vertex stack, so deep graphs do not use JVM recursion. The separate bonus benchmark writes measured Kosaraju/Tarjan comparisons to `results/bonus-scc.csv`; the required 50-row CSV is unchanged.
+
+Condensation replaces each SCC with a zero-duration block, removes internal edges and keeps every weighted crossing edge, including parallels. CriticalPath finds a maximum-weight path from any source to any sink in this DAG, keeps parents and prints the component path. Edge weights represent transition durations; vertex durations are not inferred. Negative weights are accepted mathematically, but ordinary scheduling durations should be nonnegative. Only sources start at zero, so a negative prefix cannot be discarded. Empty input gives length zero and an empty path; an isolated component is a zero-length source-to-sink path. This does not solve longest simple path inside an original cyclic SCC or make cyclic job dependencies schedulable.
+
+For the example, vertices 3 and 4 form one SCC. The best component path follows 0 -> 1 -> {3,4} -> 5, with weight 3 + 6 + 5 = 14; internal SCC weights are omitted.
+
+See [DEFENSE.md](DEFENSE.md) for a short Russian guide to the code, invariants and defense questions.
+
 ## Project map
 - `graph`: shared adjacency list, strict input parser, sample CLI.
-- `algorithms`: DSU, Kruskal, Prim, iterative Kosaraju, Kahn and DAG paths.
+- `algorithms`: DSU, Kruskal, Prim, iterative Kosaraju/Tarjan, Kahn, DAG paths, condensation and critical path.
 - `metrics`: independent long counters for each invocation.
 - `benchmark`: seeded generators, references and median harness.
 - `src/test/java`: JUnit random reference checks and edge cases.
@@ -34,12 +47,3 @@ The detailed specification requires **50 rows** across ten size/density combinat
 - `results/results.csv`, `results/plots`: real measured data and three reproducible PNGs.
 - [REPORT.md](REPORT.md): complexity, proofs, ratios, slopes and algorithm choice.
 - [PLAN.md](PLAN.md): 35 meaningful stages recorded before the first commit.
-
-## Submission archive
-```sh
-python scripts/package_submission.py
-```
-Run from a clean main checkout after release tagging. The script archives committed files only, validates the ZIP paths, and excludes build output, caches, secrets, Git internals and the source instructor PDF. The ZIP is written beside the repository as `DAA_Assignment3_Assylzhan_Amangeldi_SE-2526.zip`. Do not submit to Moodle without reviewing the deliverables.
-
-## AI use
-OpenAI Codex assisted with implementation, tests, benchmark tooling, plots and documentation. An independent read-only agent reviewed the algorithms, RNG sequence, CSV and PNGs. All benchmark values are actual Java execution results checked against the assignment references; no results or commit dates were fabricated. The student should run the commands and understand the code before defending it.
